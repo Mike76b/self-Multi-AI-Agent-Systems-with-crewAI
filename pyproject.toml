@@ -1,0 +1,7 @@
+[project]
+name = "self-multi-ai-agent-systems-with-crewai"
+version = "0.1.0"
+description = "This repo contains the all the execersices from Multi AI Agent Systems with crewAI (DeepLearningAI) course. It might also contain similar developments with my tweaks and trials either temporally or permanently."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
