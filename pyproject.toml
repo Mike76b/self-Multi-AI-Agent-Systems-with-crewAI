@@ -9,4 +9,10 @@ dependencies = [
     "crewai-tools==0.1.6",
     "langchain-community==0.0.29",
     "setuptools==68.0.0",
+    "utils>=1.0.2",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
 ]
