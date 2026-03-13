@@ -7,7 +7,6 @@
 import warnings  # Warning control
 from crewai import Agent, Task, Crew
 import os
-from IPython.display import Markdown
 
 warnings.filterwarnings("ignore")
 
