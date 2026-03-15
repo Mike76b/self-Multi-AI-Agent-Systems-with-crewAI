@@ -5,120 +5,149 @@
 # with differet LLM providers, functionalities, etc.
 
 import warnings  # Warning control
-from crewai import Agent, Task, Crew
 import os
+from crewai import Agent, Task, Crew
+from crewai_tools import DirectoryReadTool, FileReadTool, SerperDevTool, BaseTool
 
 warnings.filterwarnings("ignore")
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
-os.environ["OPENAI_MODEL_NAME"] = "gpt-3.5-turbo"
+os.environ["OPENAI_MODEL_NAME"] = "gpt-4-turbo"
+os.environ["SERPER_API_KEY"] = os.getenv("SERPER_API_KEY")
 
 # Define the agents
-planner = Agent(
-    role="Content Planner",
-    goal="Plan engaging and factually accurate content on {topic}",
-    backstory="You're working on planning a blog article "
-    "about the topic: {topic}."
-    "You collect information that helps the "
-    "audience learn something "
-    "and make informed decisions. "
-    "Your work is the basis for "
-    "the Content Writer to write an article on this topic.",
+sales_rep_agent = Agent(
+    role="Sales Representative",
+    goal="Identify high-value leads that match our ideal customer profile",
+    backstory=(
+        "As a part of the dynamic sales team at CrewAI, "
+        "your mission is to scour "
+        "the digital landscape for potential leads. "
+        "Armed with cutting-edge tools "
+        "and a strategic mindset, you analyze data, "
+        "trends, and interactions to "
+        "unearth opportunities that others might overlook. "
+        "Your work is crucial in paving the way "
+        "for meaningful engagements and driving the company's growth."
+    ),
     allow_delegation=False,
     verbose=True,
 )
 
-writer = Agent(
-    role="Content Writer",
-    goal="Write insightful and factually accurate "
-    "opinion piece about the topic: {topic}",
-    backstory="You're working on a writing "
-    "a new opinion piece about the topic: {topic}. "
-    "You base your writing on the work of "
-    "the Content Planner, who provides an outline "
-    "and relevant context about the topic. "
-    "You follow the main objectives and "
-    "direction of the outline, "
-    "as provide by the Content Planner. "
-    "You also provide objective and impartial insights "
-    "and back them up with information "
-    "provide by the Content Planner. "
-    "You acknowledge in your opinion piece "
-    "when your statements are opinions "
-    "as opposed to objective statements.",
+lead_sales_rep_agent = Agent(
+    role="Lead Sales Representative",
+    goal="Nurture leads with personalized, compelling communications",
+    backstory=(
+        "Within the vibrant ecosystem of CrewAI's sales department, "
+        "you stand out as the bridge between potential clients "
+        "and the solutions they need."
+        "By creating engaging, personalized messages, "
+        "you not only inform leads about our offerings "
+        "but also make them feel seen and heard."
+        "Your role is pivotal in converting interest "
+        "into action, guiding leads through the journey "
+        "from curiosity to commitment."
+    ),
     allow_delegation=False,
     verbose=True,
 )
 
-editor = Agent(
-    role="Editor",
-    goal="Edit a given blog post to align with the writing style of the organization. ",
-    backstory="You are an editor who receives a blog post "
-    "from the Content Writer. "
-    "Your goal is to review the blog post "
-    "to ensure that it follows journalistic best practices,"
-    "provides balanced viewpoints "
-    "when providing opinions or assertions, "
-    "and also avoids major controversial topics "
-    "or opinions when possible.",
-    allow_delegation=False,
-    verbose=True,
-)
+# Define the tools
+directory_read_tool = DirectoryReadTool(directory="./instructions")
+file_read_tool = FileReadTool()
+search_tool = SerperDevTool()
+
+
+class SentimentAnalysisTool(BaseTool):
+    name: str = "Sentiment Analysis Tool"
+    description: str = (
+        "Analyzes the sentiment of text to ensure positive and engaging communication."
+    )
+
+    def _run(self, text: str) -> str:
+        # Your custom code tool goes here
+        return "positive"
+
+
+sentiment_analysis_tool = SentimentAnalysisTool()
 
 # Define the tasks
-plan = Task(
+lead_profiling_task = Task(
     description=(
-        "1. Prioritize the latest trends, key players, "
-        "and noteworthy news on {topic}.\n"
-        "2. Identify the target audience, considering "
-        "their interests and pain points.\n"
-        "3. Develop a detailed content outline including "
-        "an introduction, key points, and a call to action.\n"
-        "4. Include SEO keywords and relevant data or sources."
+        "Conduct an in-depth analysis of {lead_name}, "
+        "a company in the {industry} sector "
+        "that recently showed interest in our solutions. "
+        "Utilize all available data sources "
+        "to compile a detailed profile, "
+        "focusing on key decision-makers, recent business "
+        "developments, and potential needs "
+        "that align with our offerings. "
+        "This task is crucial for tailoring "
+        "our engagement strategy effectively.\n"
+        "Don't make assumptions and "
+        "only use information you absolutely sure about."
     ),
-    expected_output="A comprehensive content plan document "
-    "with an outline, audience analysis, "
-    "SEO keywords, and resources.",
-    agent=planner,
+    expected_output=(
+        "A comprehensive report on {lead_name}, "
+        "including company background, "
+        "key personnel, recent milestones, and identified needs. "
+        "Highlight potential areas where "
+        "our solutions can provide value, "
+        "and suggest personalized engagement strategies."
+    ),
+    tools=[directory_read_tool, file_read_tool, search_tool],
+    agent=sales_rep_agent,
 )
 
-write = Task(
+personalized_outreach_task = Task(
     description=(
-        "1. Use the content plan to craft a compelling "
-        "blog post on {topic}.\n"
-        "2. Incorporate SEO keywords naturally.\n"
-        "3. Sections/Subtitles are properly named "
-        "in an engaging manner.\n"
-        "4. Ensure the post is structured with an "
-        "engaging introduction, insightful body, "
-        "and a summarizing conclusion.\n"
-        "5. Proofread for grammatical errors and "
-        "alignment with the brand's voice.\n"
+        "Using the insights gathered from "
+        "the lead profiling report on {lead_name}, "
+        "craft a personalized outreach campaign "
+        "aimed at {key_decision_maker}, "
+        "the {position} of {lead_name}. "
+        "The campaign should address their recent {milestone} "
+        "and how our solutions can support their goals. "
+        "Your communication must resonate "
+        "with {lead_name}'s company culture and values, "
+        "demonstrating a deep understanding of "
+        "their business and needs.\n"
+        "Don't make assumptions and only "
+        "use information you absolutely sure about."
     ),
-    expected_output="A well-written blog post "
-    "in markdown format, ready for publication, "
-    "each section should have 2 or 3 paragraphs.",
-    agent=writer,
-)
-
-edit = Task(
-    description=(
-        "Proofread the given blog post for "
-        "grammatical errors and "
-        "alignment with the brand's voice."
+    expected_output=(
+        "A series of personalized email drafts "
+        "tailored to {lead_name}, "
+        "specifically targeting {key_decision_maker}."
+        "Each draft should include "
+        "a compelling narrative that connects our solutions "
+        "with their recent achievements and future goals. "
+        "Ensure the tone is engaging, professional, "
+        "and aligned with {lead_name}'s corporate identity."
     ),
-    expected_output="A well-written blog post in markdown format, "
-    "ready for publication, "
-    "each section should have 2 or 3 paragraphs.",
-    agent=editor,
+    tools=[sentiment_analysis_tool, search_tool],
+    agent=lead_sales_rep_agent,
 )
 
 # Define the crew
-crew = Crew(agents=[planner, writer, editor], tasks=[plan, write, edit], verbose=2)
+crew = Crew(
+    agents=[sales_rep_agent, lead_sales_rep_agent],
+    tasks=[lead_profiling_task, personalized_outreach_task],
+    verbose=2,
+    memory=True,
+)
 
 # Run the crew
-result = crew.kickoff(inputs={"topic": "Barbeques in Australia"})
+inputs = {
+    "lead_name": "DeepLearningAI",
+    "industry": "Online Learning Platform",
+    "key_decision_maker": "Andrew Ng",
+    "position": "CEO",
+    "milestone": "product launch",
+}
+
+result = crew.kickoff(inputs=inputs)
 
 # Print the result
-with open("article.md", "w") as f:
+with open("customer_outreach_campaign.md", "w") as f:
     f.write(result)
