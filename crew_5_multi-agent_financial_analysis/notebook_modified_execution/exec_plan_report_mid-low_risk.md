@@ -1,0 +1,1 @@
+Detailed execution plans have been suggested for executing trades for PYPL based on the insights provided by the Data Analyst.
